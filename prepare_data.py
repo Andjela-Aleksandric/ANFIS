@@ -37,8 +37,10 @@ df = pd.DataFrame(raw, columns=["Input_1", "Input_2", "Input_3", "Output_1", "Ou
 df["Regime"] = (df["Input_1"] > 0).astype(int)
 df["Day"] = np.arange(len(df))
 
+# ovo je pripremljen dataset koji koristi glavni eksperiment
 df.to_csv(BASE_DIR / "ise_features.csv", index=False)
 
+# kontrola veličine skupa i osnovne raspodele podataka
 n = len(df)
 n_train = int(n * 0.8)
 print(f"Ukupno uzoraka: {n}  |  Trening: {n_train}  |  Test: {n - n_train}")
