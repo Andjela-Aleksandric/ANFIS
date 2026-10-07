@@ -2,7 +2,7 @@
 Priprema podataka za ANFIS eksperiment.
 
 Izvor: stock_dataset.csv iz gabrielegilardi/ANFIS repozitorijuma (vec kloniran
-u sklopu prethodnog dela rada) - ovo JE originalni UCI "Istanbul Stock Exchange"
+u sklopu prethodnog dela rada) - ovo je originalni UCI "Istanbul Stock Exchange"
 dataset (Akbilgic, Bozdogan & Balaban), isti dataset na koji se oslanja rad
 (Boyacioglu & Avci, 2010) naveden u pregledu literature. Podaci su vec
 pretprocesirani kao dnevni prinosi (returns), 536 trgovackih dana, 3 ulazne
