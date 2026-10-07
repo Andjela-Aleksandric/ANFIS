@@ -1,0 +1,5 @@
+poredjenje,seed_a,seed_b,W,p_vrednost
+xanfis - gradient-only (RMSprop) VS linearna regresija,17,det,2477.0,0.20036907785716163
+sanfis - S-ANFIS VS sanfis - plain,314,2024,2441.0,0.16380458061837333
+"xanfis - classic hybrid (Adam, 300) VS xanfis - classic hybrid (Adam, 100)",91,42,1585.0,0.16378430707516511
+xanfis - bio-inspired (PSO) VS gabrielegilardi/ANFIS (PSO),314,91,1651.0,0.00011922302760515229
