@@ -20,7 +20,6 @@ TARGET = "BOLEST"
 EPOCHS = 100  # fiksirano po uputstvu
 N_MF_PER_INPUT = 2  # 2^5 = 32 pravila kod grid-partition metoda
 
-# ucitavanje i mapiranje kolona, videti napomenu na vrhu fajla
 xl = pd.ExcelFile(DATA_PATH)
 
 train_raw = xl.parse("za anfis train", header=None)
@@ -91,7 +90,7 @@ def run_sanfis(X_fit, y_fit, X_eval):
     yt = torch.tensor(y_fit.reshape(-1, 1), dtype=torch.float32)
     model = SANFIS(membfuncs_template, n_input=len(FEATURES), scale="Std")
     opt = torch.optim.Adam(model.parameters())
-    # fit trazi i validacioni deo, koristimo mali deo trening dela za to.
+    # fit trazi i validacioni deo, koristimo mali deo trening dela za to
     # epochs=100 je ovde isto sto i default biblioteke
     n_val = max(1, int(0.1 * len(Xt)))
     model.fit([Xt[:-n_val], yt[:-n_val]], [Xt[-n_val:], yt[-n_val:]],
