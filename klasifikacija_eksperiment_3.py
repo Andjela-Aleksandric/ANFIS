@@ -20,12 +20,11 @@ TARGET = "BOLEST"
 EPOCHS = 100  # isto kao prva dva eksperimenta
 N_MF_PER_INPUT = 2  # isto kao prva dva eksperimenta
 
-# ucitavanje iz Sheet1 (originalni, kompletni podaci), svi pacijenti ostaju
+# ucitavanje iz Sheet1 (originalni, kompletni podaci)
 xl = pd.ExcelFile(DATA_PATH)
 sheet1 = xl.parse("Sheet1")[FEATURES + [TARGET]].reset_index(drop=True)
 
-# grupa = identican profil ULAZA (BEZ dijagnoze, vidi napomenu na vrhu
-# fajla zasto). pacijenti bez ponavljanja dobijaju svoju sopstvenu grupu
+# pacijenti bez ponavljanja dobijaju svoju sopstvenu grupu
 # (grupa velicine 1), tako da se nista ne gubi
 groups_all = sheet1.groupby(FEATURES).ngroup().values
 n_grupa = len(set(groups_all))
@@ -36,7 +35,7 @@ print(f"({len(sheet1) - n_grupa} pacijenata deli profil sa bar jednim drugim pac
 X_all = sheet1[FEATURES].values.astype(float)
 y_all = sheet1[TARGET].values.astype(int)
 
-# podela na nivou GRUPA, ne pojedinacnih redova - cela grupa ide na jednu
+# podela na nivou grupa, ne pojedinacnih redova - cela grupa ide na jednu
 # stranu, nikad razbijena izmedju train i test
 gss = GroupShuffleSplit(n_splits=1, test_size=0.30, random_state=2021)
 train_df_idx, test_df_idx = next(gss.split(X_all, y_all, groups_all))
@@ -53,7 +52,7 @@ print(f"Test:  {len(X_test_raw)} pacijenata  | balans BOLEST: {pd.Series(y_test)
 print("Provera: 0 grupa (klinickih profila) podeljeno izmedju train i test -", len(preklapanje), "pogodjeno")
 print("=" * 90)
 
-# modeli - identicno prethodna dva eksperimenta (ista 8 metoda, isti hiperparametri)
+# modeli - identicno prethodna dva eksperimenta (istih 8 metoda, isti hiperparametri)
 from xanfis import AnfisClassifier, GdAnfisClassifier, BioAnfisClassifier
 
 
@@ -88,7 +87,6 @@ membfuncs_template = [
 
 
 def run_sanfis(X_fit, y_fit, X_eval):
-    # epochs=100 je isto sto i default biblioteke, ali ga navodim eksplicitno
     torch.manual_seed(42)
     Xt = torch.tensor(X_fit, dtype=torch.float32)
     yt = torch.tensor(y_fit.reshape(-1, 1), dtype=torch.float32)
@@ -102,14 +100,8 @@ def run_sanfis(X_fit, y_fit, X_eval):
     return (pred >= 0.5).astype(int)
 
 
-# treca nezavisna implementacija - klasican Jang (1993) ANFIS, cist Python/
-# numpy (twmeggs/anfis), isto kao u prethodna dva eksperimenta - vidi
-# opsiran komentar u klasifikacija_eksperiment.py zasto se instalira sa
-# GitHub-a i zasto se njena fascikla rucno ubacuje u sys.path
 import importlib.util
 
-# np.product je stara biblioteka ugradila pozivajuci se na numpy alias koji
-# je u novijim numpy verzijama ukinut (zamenjen sa np.prod) - vracam ga rucno
 if not hasattr(np, "product"):
     np.product = np.prod
 
@@ -122,8 +114,7 @@ import membership.mfDerivs
 
 
 def _twm_backprop_patched(ANFISObj, columnX, columns, theWSum, theW, theLayerFive):
-    # original backprop() iz biblioteke, sa jednim ispravljenim redom - vidi
-    # komentar u klasifikacija_eksperiment.py za objasnjenje
+
     paramGrp = [0] * len(ANFISObj.memFuncs[columnX])
     for MF in range(len(ANFISObj.memFuncs[columnX])):
         parameters = np.empty(len(ANFISObj.memFuncs[columnX][MF][1]))
@@ -304,9 +295,6 @@ def run_h_anfis(X_fit, y_fit, X_eval):
     loader = torch.utils.data.DataLoader(ds, batch_size=len(ds), shuffle=True)
     trainer = nft.Basic_optimizer_training_algorithm(epochs=EPOCHS, loss_function=nn.BCELoss())
     with contextlib.redirect_stdout(io.StringIO()):
-        # val_loader je opciona i ovde se ne koristi early stopping, pa
-        # izostavljanje validacionog loadera ne menja treniranje - vidi
-        # komentar u klasifikacija_eksperiment.py
         trainer(model, loader)
 
     Xe = torch.tensor(X_eval, dtype=torch.float32)
@@ -349,9 +337,6 @@ def safe_run(name, fn, X_fit, y_fit, X_eval, y_eval, context):
     row["vreme"] = time.time() - t0
     return row
 
-
-# 10-fold stratifikovana kros validacija NA NIVOU GRUPA - StratifiedGroupKFold
-# umesto obicnog StratifiedKFold, da se grupe ne razbijaju ni izmedju foldova
 print("Pokrecem 10-fold kros validaciju na train skupu (eksperiment 3, grupno)...")
 sgkf = StratifiedGroupKFold(n_splits=10, shuffle=True, random_state=2026)
 fold_rows = []
