@@ -45,8 +45,8 @@ X_test_raw = test_df[FEATURES].values.astype(float)
 y_test = test_df[TARGET].values.astype(int)
 
 # svaka funkcija dobija (X_fit, y_fit, X_eval) vec skalirano i vraca
-# predikcije (0/1) na X_eval. skaliranje je posebno po foldu, fit samo na
-# trening delu, da ne curi informacija iz validacionog/test dela
+# predikcije (0/1) na X_eval. skaliranje je posebno po foldu, fit samo na trening delu
+
 from xanfis import AnfisClassifier, GdAnfisClassifier, BioAnfisClassifier
 
 
@@ -66,7 +66,6 @@ def run_xanfis_gradient(X_fit, y_fit, X_eval):
 
 def run_xanfis_bio(X_fit, y_fit, X_eval):
     # bio-inspired, default optimizator je genetski algoritam, ne diramo ga
-    # - ovde se epoha zove "epoch" unutar optim_params
     m = BioAnfisClassifier(optim_params={"epoch": EPOCHS}, verbose=False)
     m.fit(X_fit, y_fit)
     return m.predict(X_eval)
@@ -93,8 +92,7 @@ def run_sanfis(X_fit, y_fit, X_eval):
     model = SANFIS(membfuncs_template, n_input=len(FEATURES), scale="Std")
     opt = torch.optim.Adam(model.parameters())
     # fit trazi i validacioni deo, koristimo mali deo trening dela za to.
-    # epochs=100 je ovde isto sto i default biblioteke, ali ga navodim
-    # eksplicitno da bude jasno da je namerno, a ne slucajno poklapanje
+    # epochs=100 je ovde isto sto i default biblioteke
     n_val = max(1, int(0.1 * len(Xt)))
     model.fit([Xt[:-n_val], yt[:-n_val]], [Xt[-n_val:], yt[-n_val:]],
               opt, nn.MSELoss(), epochs=EPOCHS, disable_output=True)
@@ -103,24 +101,9 @@ def run_sanfis(X_fit, y_fit, X_eval):
     return (pred >= 0.5).astype(int)
 
 
-# treca nezavisna implementacija - klasican Jang (1993) ANFIS, cist Python/
-# numpy (twmeggs/anfis). Dve stvari su ovde nezgodne, pa zato ovoliko linija
-# samo da se uveze:
-# 1) i stara PyPI verzija i trenutni GitHub kod imaju bag u sopstvenom
-#    __init__.py (uradi "import membership..." kao da je "membership" paket
-#    nezavisan, a nije) - zato ide direktno instalacija sa GitHub-a (vidi
-#    requirements.txt) i onda rucno ubacivanje njene fascikle u sys.path, da
-#    se preskoci taj bagovit __init__.py i direktno uhvate anfis.py i
-#    membership/ fajlovi (isto kao sto bi radilo da je ovo lokalno kloniran
-#    repo, a ne pip paket)
-# 2) ta biblioteka se i zove "anfis" (isto ime kao gilardi-jev lokalni fajl
-#    malo nize), pa je importujemo ODMAH dok sys.path jos nije dirana za
-#    gilardi/jfpower, i odmah posle izbacujemo iz sys.modules da naredni
-#    "import anfis" (gilardi) ne pokupi ovaj paket umesto svog lokalnog fajla
+# treca nezavisna implementacija - klasican Jang (1993) ANFIS, cist Python
 import importlib.util
 
-# np.product je stara biblioteka ugradila pozivajuci se na numpy alias koji
-# je u novijim numpy verzijama ukinut (zamenjen sa np.prod) - vracam ga rucno
 if not hasattr(np, "product"):
     np.product = np.prod
 
@@ -133,12 +116,6 @@ import membership.mfDerivs
 
 
 def _twm_backprop_patched(ANFISObj, columnX, columns, theWSum, theW, theLayerFive):
-    # original backprop() iz biblioteke, sa jednim ispravljenim redom: kad
-    # "consequent in rulesWithAlpha", fensi-indeksiranje vraca niz od 1
-    # elementa umesto broja, a novije numpy verzije ne dozvoljavaju da se
-    # takav niz direktno upise u jedno mesto u nizu ("setting an array
-    # element with a sequence"). [0] samo izvuce taj jedan broj - racun je
-    # identican originalu, ovo je cist bug-fix, ne promena logike
     paramGrp = [0] * len(ANFISObj.memFuncs[columnX])
     for MF in range(len(ANFISObj.memFuncs[columnX])):
         parameters = np.empty(len(ANFISObj.memFuncs[columnX][MF][1]))
@@ -263,8 +240,7 @@ sys.modules.pop("anfis", None)  # da naredni import anfis opet nadje gilardi ver
 
 
 def _jfp_fit_coeff_patched(self, x, weights, y_actual):
-    # biblioteka koristi torch.gels za LSE korak, davno uklonjeno iz torch-a
-    # (stara, neodrzavana biblioteka) - isti racun, samo preko lstsq
+    # biblioteka koristi torch.gels za LSE korak, uklonjeno iz torch-a
     x_plus = torch.cat([x, torch.ones(x.shape[0], 1)], dim=1)
     weighted_x = torch.einsum('bp, bq -> bpq', weights, x_plus)
     weighted_x[weighted_x == 0] = 1e-12
@@ -298,11 +274,7 @@ def run_jfpower(X_fit, y_fit, X_eval):
     # batch_size=len(ds) (cela trening grupa u jednom batch-u) jer su nam
     # skupovi mali - sitne mini-grupe tu ne bi imale smisla. jfpower-ova
     # AnfisNet klasa NEMA sopstveni ugradjen optimizator/loss (to nije deo
-    # modela, vec se bira spolja) - optimizator i loss ispod nisu moj izbor
-    # po slobodnoj proceni, vec tacno ono sto NJENA SOPSTVENA train_anfis
-    # funkcija interno koristi (provereno direktno u izvornom kodu
-    # experimental.py). Pisem ih rucno samo zato sto koristim
-    # train_anfis_with (nizi nivo) da bih mogla da forsiram epochs=100
+    # modela, vec se bira spolja) 
     loader = torch.utils.data.DataLoader(ds, batch_size=len(ds), shuffle=True)
     optimizer = torch.optim.SGD(model.parameters(), lr=1e-4, momentum=0.99)
     criterion = nn.MSELoss(reduction="sum")
@@ -336,12 +308,6 @@ def run_h_anfis(X_fit, y_fit, X_eval):
     loader = torch.utils.data.DataLoader(ds, batch_size=len(ds), shuffle=True)
     trainer = nft.Basic_optimizer_training_algorithm(epochs=EPOCHS, loss_function=nn.BCELoss())
     with contextlib.redirect_stdout(io.StringIO()):
-        # val_loader je opciona (provereno u izvornom kodu biblioteke,
-        # training_algorithms.py: __call__(self, model, train_loader,
-        # val_loader=None, ...)) i ovde se ne koristi early stopping, pa
-        # izostavljanje validacionog loadera ne menja nikakvo treniranje -
-        # ranije je ovde bio prosledjen isti loader i kao "validacija", sto
-        # je bilo zbunjujuce jer to nije stvarna nezavisna validacija
         trainer(model, loader)
 
     Xe = torch.tensor(X_eval, dtype=torch.float32)
@@ -372,7 +338,6 @@ def compute_metrics(y_true, y_pred):
 
 def safe_run(name, fn, X_fit, y_fit, X_eval, y_eval, context):
     # bio-inspired metoda ume povremeno da izbaci NaN/Inf na manjim foldovima
-    # (poznato ogranicenje te biblioteke) - umesto da cela skripta pukne,
     # taj pokusaj se belezi kao neuspeo i nastavlja se dalje
     t0 = time.time()
     try:
