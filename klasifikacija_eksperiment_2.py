@@ -42,7 +42,7 @@ print(f"Train: {len(X_train_raw)} pacijenata | balans BOLEST: {pd.Series(y_train
 print(f"Test:  {len(X_test_raw)} pacijenata  | balans BOLEST: {pd.Series(y_test).value_counts().to_dict()}")
 print("=" * 90)
 
-# modeli - identicno prvom eksperimentu (istih 7 metoda, isti hiperparametri)
+# modeli - identicno prvom eksperimentu (istih 8 metoda, isti hiperparametri)
 from xanfis import AnfisClassifier, GdAnfisClassifier, BioAnfisClassifier
 
 
