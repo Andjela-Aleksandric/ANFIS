@@ -7,3 +7,7 @@ torch==2.14.1
 mealpy==3.0.3
 xanfis==1.1.0
 sanfis==0.1.0
+openpyxl==3.1.5
+neuro-fuzzy-toolbox==0.4.0
+anfis @ git+https://github.com/twmeggs/anfis.git
+scikit-fuzzy
