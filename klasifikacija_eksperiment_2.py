@@ -20,8 +20,7 @@ TARGET = "BOLEST"
 EPOCHS = 100  # isto kao prvi eksperiment
 N_MF_PER_INPUT = 2  # isto kao prvi eksperiment
 
-# ucitavanje iz Sheet1 (originalni, kompletni podaci), sveza podela, bez
-# ikakvog uklanjanja/filtriranja redova - dataset je gotov i koristi se ceo
+# ucitavanje iz Sheet1 (originalni, kompletni podaci)
 xl = pd.ExcelFile(DATA_PATH)
 sheet1 = xl.parse("Sheet1")[FEATURES + [TARGET]].reset_index(drop=True)
 
@@ -32,7 +31,7 @@ X_all = sheet1[FEATURES].values.astype(float)
 y_all = sheet1[TARGET].values.astype(int)
 
 # drugi random seed nego prvi eksperiment (42), i drugi odnos (70/30 umesto
-# ~79/21) - namerno manji trening skup, generalizacija je teza
+# ~79/21) - namerno manji trening skup, da bude generalizacija teza
 train_df_idx, test_df_idx = train_test_split(
     np.arange(len(sheet1)), test_size=0.30, stratify=y_all, random_state=2026,
 )
@@ -43,7 +42,7 @@ print(f"Train: {len(X_train_raw)} pacijenata | balans BOLEST: {pd.Series(y_train
 print(f"Test:  {len(X_test_raw)} pacijenata  | balans BOLEST: {pd.Series(y_test).value_counts().to_dict()}")
 print("=" * 90)
 
-# modeli - identicno prvom eksperimentu (ista 7 metoda, isti hiperparametri)
+# modeli - identicno prvom eksperimentu (istih 7 metoda, isti hiperparametri)
 from xanfis import AnfisClassifier, GdAnfisClassifier, BioAnfisClassifier
 
 
@@ -92,15 +91,9 @@ def run_sanfis(X_fit, y_fit, X_eval):
     return (pred >= 0.5).astype(int)
 
 
-# treca nezavisna implementacija - klasican Jang (1993) ANFIS, cist Python/
-# numpy (twmeggs/anfis), isto kao u prvom eksperimentu - vidi opsiran
-# komentar u klasifikacija_eksperiment.py zasto se instalira sa GitHub-a i
-# zasto se njena fascikla rucno ubacuje u sys.path (bag u njenom sopstvenom
-# __init__.py, plus isto ime "anfis" kao gilardi-jev lokalni fajl)
+
 import importlib.util
 
-# np.product je stara biblioteka ugradila pozivajuci se na numpy alias koji
-# je u novijim numpy verzijama ukinut (zamenjen sa np.prod) - vracam ga rucno
 if not hasattr(np, "product"):
     np.product = np.prod
 
@@ -113,8 +106,6 @@ import membership.mfDerivs
 
 
 def _twm_backprop_patched(ANFISObj, columnX, columns, theWSum, theW, theLayerFive):
-    # original backprop() iz biblioteke, sa jednim ispravljenim redom - vidi
-    # komentar u klasifikacija_eksperiment.py za objasnjenje
     paramGrp = [0] * len(ANFISObj.memFuncs[columnX])
     for MF in range(len(ANFISObj.memFuncs[columnX])):
         parameters = np.empty(len(ANFISObj.memFuncs[columnX][MF][1]))
@@ -265,11 +256,6 @@ def run_jfpower(X_fit, y_fit, X_eval):
     loader = torch.utils.data.DataLoader(ds, batch_size=len(ds), shuffle=True)
     optimizer = torch.optim.SGD(model.parameters(), lr=1e-4, momentum=0.99)
     criterion = nn.MSELoss(reduction="sum")
-
-    # optimizator i loss nisu moj izbor po slobodnoj proceni - jfpower-ova
-    # AnfisNet klasa nema sopstveni ugradjen optimizator, a ovo je tacno ono
-    # sto njena sopstvena train_anfis funkcija interno koristi (provereno u
-    # izvornom kodu experimental.py, vidi klasifikacija_eksperiment.py)
     with contextlib.redirect_stdout(io.StringIO()):
         train_anfis_with(model, loader, optimizer, criterion, epochs=EPOCHS, show_plots=False)
 
@@ -297,9 +283,6 @@ def run_h_anfis(X_fit, y_fit, X_eval):
     loader = torch.utils.data.DataLoader(ds, batch_size=len(ds), shuffle=True)
     trainer = nft.Basic_optimizer_training_algorithm(epochs=EPOCHS, loss_function=nn.BCELoss())
     with contextlib.redirect_stdout(io.StringIO()):
-        # val_loader je opciona i ovde se ne koristi early stopping, pa
-        # izostavljanje validacionog loadera ne menja treniranje - vidi
-        # komentar u klasifikacija_eksperiment.py
         trainer(model, loader)
 
     Xe = torch.tensor(X_eval, dtype=torch.float32)
@@ -329,8 +312,6 @@ def compute_metrics(y_true, y_pred):
 
 
 def safe_run(name, fn, X_fit, y_fit, X_eval, y_eval, context):
-    # bio-inspired metoda ume povremeno da izbaci NaN/Inf na manjim foldovima
-    # - umesto da cela skripta pukne, taj pokusaj se belezi kao neuspeo
     t0 = time.time()
     try:
         y_pred = fn(X_fit, y_fit, X_eval)
